@@ -79,7 +79,7 @@ dumpStack proc
 	popad
 	pop ebp
 	;; end epilogue   ;;
-	ret 
+	ret 4
 dumpStack endp
 
 
@@ -173,7 +173,7 @@ generate proc
 	popad
 	pop		ebp
 	;; end epilogue   ;;
-	ret
+	ret 	4
 generate endp 
 
 ; This function fills an array with random floats of a certain range
@@ -207,7 +207,7 @@ fillArray proc
 	popad
 	pop ebp
 	;; end epilogue   ;;
-	ret
+	ret	8
 fillArray endp
 
 ; This function prints out all the floating point numbers in an array
@@ -215,17 +215,11 @@ fillArray endp
 A			EQU [EBP+8]
 ARRAY_SIZE 	EQU [EBP+12]
 LABEL_ARR	EQU [EBP+16]
-NUM_ROWS	EQU [EBP-4]
-Y			EQU [EBP-8]
-Y_OFFSET	EQU [EBP-12]
-X			EQU [EBP-16]
-X_OFFSET	EQU [EBP-20]
 displayList proc
 	;; begin prologue ;;
 	push 	ebp
 	mov 	ebp, esp
 	pushad
-	sub 	esp, 20
 	;; end prologue   ;;
 
 	print "--begin list--"
@@ -269,11 +263,10 @@ displayList proc
 	call crlf
 
 	;; begin epilogue ;;
-	add 	esp, 20
 	popad
 	pop		ebp
 	;; end epilogue   ;;
-	ret
+	ret		12
 displayList endp
 
 ; Prints out the median of a list of SORTED floats.
@@ -341,8 +334,256 @@ displayMedian proc
 	popad
 	pop 	ebp
 	;; end prologue   ;;
-	ret
+	ret		8
 displayMedian endp
+
+; This function sorts an array requring 2n of space using merge sort.
+; The very basic pseudocode and concepts were learned by me from the book "Algorithms, 4th Edition", a year ago.
+; Receives: array (ref), arraySize (val), buffer (ref, assumed to be same size as array), p (val), q (val)
+; Returns: VOID!!
+A 			EQU [EBP+8]
+ARRAY_SiZE 	EQU [EBP+12]
+BUF 		EQU [EBP+16]
+P 			EQU [EBP+20]
+Q 			EQU [EBP+24]
+R 			EQU [EBP-4]
+FINAL_SIZE	EQU [EBP-8]
+I			EQU [EBP-12]
+J			EQU [EBP-16]
+K			EQU [EBP-20]
+LEFT_SIZE 	EQU [EBP-24]
+RIGHT_SIZE 	EQU [EBP-28]
+LEFT 		EQU [EBP-32]
+RIGHT 		EQU [EBP-36]
+sortList proc
+	;; begin prologue ;;
+	push 	ebp
+	mov 	ebp, esp
+	pushad
+	sub 	esp, 4
+	;; end prologue   ;;
+
+	; { if p == q return 
+	mov 	eax, P
+	cmp 	eax, Q
+	je		cleanup
+	; }
+
+	; { declare r = (p+q.2)
+	add 	eax, q
+	mov 	ebx, 2
+	div 	ebx
+	mov 	R, eax
+
+	; call sort (p, r)
+	push 	R
+	push 	P
+	push 	BUF
+	push 	ARRAY_SIZE
+	push 	A
+	call 	sortList
+	; call sort (r+1, p)
+	mov 	eax, R
+	add 	eax, 1
+	push 	eax
+	push 	P
+	push 	BUF
+	push 	ARRAY_SIZE
+	push 	A
+	call 	sortList
+	sortList
+
+	; size = q - r + 1
+	add 	eax, Q
+	add 	eax, 1
+	sub 	eax, R
+	mov 	FINAL_SIZE, eax
+
+	; i, j, k = 0
+	mov 	eax, 0
+	mov 	I, eax
+	mov 	J, eax
+	mov 	K, eax
+
+	; left size = r - p + 1
+	mov 	eax, R
+	add 	eax, 1
+	sub 	eax, P
+	mov 	LEFT_SIZE, eax
+	; right size = q - r 
+	mov 	eax, Q
+	sub 	eax, R
+	mov 	RIGHT_SIZE, eax
+
+	; left = A [p, r]
+	mov 	eax, P
+	mov 	ebx, 4
+	mul 	ebx
+	add 	eax, A
+	mov 	LEFT, eax
+	; right = A [r+1, q]
+	mov 	eax, R
+	add 	eax, 1
+	mov 	ebx, 4
+	mul 	ebx
+	add 	eax, A
+	mov 	RIGHT, eax
+
+	; while i < size && j < left_size and k < left_size
+	loopStart:
+		mov 	eax, I
+		cmp 	I, FINAL_SIZE
+		je 		emptyArrays
+
+		mov 	eax, J
+		cmp 	J, LEFT_SIZE
+		je 		emptyArrays
+
+		mov 	eax, K
+		cmp 	K, RIGHT_SIZE
+		je 		emptyArrays
+		; if right[j] < left[k]
+		
+		mov 	eax, J
+		mov 	ebx, 4
+		mul 	ebx
+		add 	eax, LEFT
+
+		mov 	ecx, [eax] ; temporarily store left[j] as ecx
+
+		mov 	eax, K
+		mov 	ebx, 4
+		mul 	ebx
+		add 	eax, RIGHT ; right[k] is eax
+
+		cmp 	[eax], ecx
+		jl 		rightLessThanLeft
+			leftLessThanRight
+				; A [p+i] = left[j]
+				; recall that left[j] is currently ecx, so we're free to use eax!
+				mov 	edx, [eax]
+
+				; Calculate OFFSET A[p+i]
+				mov 	eax, I
+				add 	eax, P
+				mov 	ebx, 4
+				mul 	ebx
+				add 	eax, A
+
+				; A[p+i] = left[j]
+				mov 	[eax], ecx
+
+				; i += 1
+				; j += 1
+				mov 	eax, 1
+				add 	I, eax
+				add 	J, eax
+
+				jmp endRightLeftComp
+
+			; else
+			rightLessThanLeft:
+				; A[p+i] = right[k]
+				; recall that right[k] is currently [eax], so let's move it into edx
+				mov 	edx, [eax]
+
+				; calcualte A[p+i]
+				mov 	eax, I
+				add 	eax, P
+				mov 	ebx, 4
+				mul 	ebx
+				add 	eax, A
+
+				; set A[p+i] = right[k]
+				mov 	[eax], edx
+
+				; i += 1
+				; k += 1
+				mov 	eax, 1
+				add 	I, eax
+				add 	K, eax
+			endRightLeftComp:
+		jmp loopStart
+
+	emptyArrays:
+		; for j in j..leftsize
+		emptyLeftStart:
+			mov 	eax, J
+			cmp 	eax, LEFT_SIZE
+			je  	emptyLeftEnd
+
+			; A[p+i] = left[j]
+
+			; first calculate left[j]
+			mov 	eax, J
+			mov 	ebx, 4
+			mul 	ebx
+			add 	eax, LEFT
+			; store in edx for now
+			mov 	edx, [eax]
+
+			; now calculate a[p+i]
+			mov 	eax, I
+			add 	eax, P
+			mov 	ebx, 4
+			mul 	ebx
+			add 	eax, A
+			; now [eax] is A
+
+			mov 	[eax], edx
+
+			; i += 1
+			; j += 1
+			mov 	eax, 1
+			add 	I, eax
+			add 	J, eax
+
+			jmp emptyLeftStart
+		emptyLeftEnd:
+
+		; for k in k..rightsize
+		emptyRightStart:
+			mov 	eax, K
+			cmp 	eax, RIGHT_SIZE
+			je  	emptyRightEnd
+
+			; A[p+i] = right[k]
+
+			; first calculate right[k]
+			mov 	eax, K
+			mov 	ebx, 4
+			mul 	ebx
+			add 	eax, RIGHT
+			; store in edx for now
+			mov 	edx, [eax]
+
+			; now calculate A[p+i]
+			mov 	eax, I
+			add 	eax, P
+			mov 	ebx, 4
+			mul 	ebx
+			add 	eax, A
+			; now [eax] is A
+
+			mov 	[eax], edx
+
+			; i += 1
+			; k += 1
+			mov 	eax, 1
+			add 	I, eax
+			add 	K, eax
+
+			jmp emptyRightStart
+		emptyRightEnd:
+
+	;; begin epilogue ;;
+	cleanup: 
+	sub 	esp, 4
+	popad
+	pop 	ebp
+	;; end epilogue   ;;
+	ret	 	20
+sortList endp
 
 
 main proc
@@ -376,6 +617,7 @@ main proc
 	call 	displayList
 	;;;;;;;;;;;;;;;;;;;;
 
+	;; CALL THIS AFTER SORTING THE ARRAY
 	;;;;;;;;;;;;;;;;;;;;
 	push 	arraySize
 	push 	OFFSET array
