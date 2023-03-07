@@ -122,17 +122,61 @@ getData endp
 ; This function generates a float between a certain range of integers defined as a constant
 ; Receives: n (val) ; a dummy value.
 ; Returns: n (val) ; a 32-bit float
+N EQU [EBP + 8]
+; LOCAL_NUM_OF_NUMS EQU [ESP - 4]
 generate proc 
-	; generate a number between 0 and 1
-	mov eax, 1000000
-	inc eax
-	call RandomRange
+	;; begin prologue ;;
+	push 	ebp
+	mov 	ebp, esp
+	pushad
+	sub		esp, 4
+	;; end prologue   ;;
 
+
+	mov 	eax, 1000000000 ; 1 billion
+	call 	RandomRange
+
+	; need to first put eax into stack location, then load its location
+	push	eax
+	fild	DWORD PTR [esp]
+	pop		eax
+
+	mov 	eax, 1000000000
+	push	eax
+	fild 	DWORD PTR [esp]
+	pop		eax
+
+	fdiv
+
+	mov 	eax, HI
+	sub 	eax, LO
+	add 	eax, 1
+	mov		ecx, eax
+	push	ecx
+	fild 	DWORD PTR [esp]
+	pop		ecx
+
+	fmul
+
+	push	LO
+	fild 	DWORD PTR [esp]
+	pop		eax
+
+	fadd 	
+	
+	fistp 	DWORD PTR N
+
+	add		esp, 4
+	;; begin epilogue ;;
+	popad
+	pop		ebp
+	;; end epilogue   ;;
+	ret
 generate endp 
 
 ; This function fills an array with random floats of a certain range
 ; Receives: array (ref), array_size (val); push in reverse order
-ARRAY		EQU [EBP + 12]
+A			EQU [EBP + 12]
 ARRAY_SIZE	EQU [EBP + 8]
 fillArray proc
 	;; begin prologue ;;
@@ -142,7 +186,7 @@ fillArray proc
 	;; end prologue   ;;
 
 	mov ecx, ARRAY_SIZE
-	mov esi, ARRAY
+	mov esi, A
 
 	start:
 		;;;;;;;;;;
@@ -164,10 +208,12 @@ fillArray proc
 	ret
 fillArray endp
 
+; 1703788
+
 main proc
 	; Sets the seed according to system clock
 	; Setting to 0 for debug purposes
-	; call Randomize
+	call Randomize
 	finit
 
 	;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +225,8 @@ main proc
 	call getData
 	;;;;;;;;;;;;;;;;;;;;
 
-	mov arraySize, userIn
+	mov eax, userIn
+	mov arraySize, eax
 
 	;;;;;;;;;;;;;;;;;;;;
 	push arraySize
