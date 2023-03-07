@@ -191,6 +191,7 @@ fillArray proc
 	mov esi, A
 
 	start:
+		print "HI"
 		;;;;;;;;;;
 		push 0
 		call generate
@@ -244,72 +245,85 @@ displayList proc
 	mov 	X, eax ; set x to 0
 	mov 	esi, A ; set esi to A
 
-	mov 	ecx, NUM_ROWS ; iterate by the number of rows we have to print
-	nextInColumn:
-		mov 	edx, 0
+	mov ecx, ARRAY_SIZE
 
-		; { reset y
-		mov 	eax, 0
-		mov 	Y, eax
-		; } 
+	start:
+		fld 	DWORD PTR [esi]
+		call 	WriteFloat
+		print 	9
+		; literally just here to make sure the floating stack doesn't overflow
+		fstp 	st(0)
 
-		; { calculate the X_OFFSET, which is simple cause it's just x * 4
-		mov		eax, X
-		mov		ebx, 4
-		mul		ebx
-		mov		X_OFFSET, eax
-		; }
+		add esi, 4
+		loop start
 
-		; create a loop over elements in the row
-		push 	ecx
-		mov 	ecx, 10
-		nextInRow: 
-			; { Check if we have any more numbers
-			mov		eax, Y
-			mov		ebx, NUM_ROWS
-			mul		ebx
-			add		eax, X
-			cmp 	eax, ARRAY_SIZE
-			jge		nextInColumnPrelude
-			; } 
 
-			; { calculate the Y_OFFSET
-			mov		eax, Y
-			mov		ebx, NUM_ROWS
-			mul		ebx
-			mov 	ebx, 4
-			mul 	ebx
-			mov		Y_OFFSET, eax
-			; }
+	; mov 	ecx, NUM_ROWS ; iterate by the number of rows we have to print
+	; nextInColumn:
+	; 	mov 	edx, 0
 
-			; { Add the Y_OFFSET to the X_OFFSET
-			mov		eax, X_OFFSET
-			add		eax, Y_OFFSET
-			; } 
+	; 	; { reset y
+	; 	mov 	eax, 0
+	; 	mov 	Y, eax
+	; 	; } 
 
-			; { now esi + eax will give the array element.
-			fld 	DWORD PTR [esi+eax]
-			call 	WriteFloat
-			print 	9
-			; } 
+	; 	; { calculate the X_OFFSET, which is simple cause it's just x * 4
+	; 	mov		eax, X
+	; 	mov		ebx, 4
+	; 	mul		ebx
+	; 	mov		X_OFFSET, eax
+	; 	; }
 
-			; { Increment y 
-			mov 	eax, Y
-			add 	eax, 1
-			mov 	Y, eax
-			; } 
-			loop 	nextInRow
+	; 	; create a loop over elements in the row
+	; 	push 	ecx
+	; 	mov 	ecx, 10
+	; 	nextInRow: 
+	; 		; { Check if we have any more numbers
+	; 		mov		eax, Y
+	; 		mov		ebx, NUM_ROWS
+	; 		mul		ebx
+	; 		add		eax, X
+	; 		cmp 	eax, ARRAY_SIZE
+	; 		jge		nextInColumnPrelude
+	; 		; } 
 
-		nextInColumnPrelude:
-			pop 	ecx
+	; 		; { calculate the Y_OFFSET
+	; 		mov		eax, Y
+	; 		mov		ebx, NUM_ROWS
+	; 		mul		ebx
+	; 		mov 	ebx, 4
+	; 		mul 	ebx
+	; 		mov		Y_OFFSET, eax
+	; 		; }
 
-			call	crlf
-		
-			mov 	eax, X
-			add 	eax, 1
-			mov 	X, eax
-			;;;
-			loop nextInColumn
+	; 		; { Add the Y_OFFSET to the X_OFFSET
+	; 		mov		eax, X_OFFSET
+	; 		add		eax, Y_OFFSET
+	; 		; } 
+
+	; 		; { now esi + eax will give the array element.
+	; 		fld 	DWORD PTR [esi+eax]
+	; 		call 	WriteFloat
+	; 		print 	9
+	; 		; } 
+
+	; 		; { Increment y 
+	; 		mov 	eax, Y
+	; 		add 	eax, 1
+	; 		mov 	Y, eax
+	; 		; } 
+	; 		loop 	nextInRow
+
+	; 	nextInColumnPrelude:
+	; 		pop 	ecx
+
+	; 		call	crlf
+	; 	
+	; 		mov 	eax, X
+	; 		add 	eax, 1
+	; 		mov 	X, eax
+	; 		;;;
+	; 		loop nextInColumn
 
 	;; begin epilogue ;;
 	add 	esp, 20
