@@ -27,7 +27,7 @@ endm
 
 
 .data
-	MIN 		EQU 1
+	MIN 		EQU 10
 	MAX 		EQU 200
 	LO 			EQU 100
 	HI 			EQU 999
@@ -581,7 +581,7 @@ sortList proc
 			mul 	ebx
 			add 	eax, LEFT
 			; store in edx for now
-			mov 	edx, [eax]
+			mov 	ecx, [eax]
 
 			; now calculate a[p+i]
 			mov 	eax, I
@@ -591,7 +591,7 @@ sortList proc
 			add 	eax, A
 			; now [eax] is A
 
-			mov 	[eax], edx
+			mov 	[eax], ecx
 
 			; i += 1
 			; j += 1
@@ -616,7 +616,7 @@ sortList proc
 			mul 	ebx
 			add 	eax, RIGHT
 			; store in edx for now
-			mov 	edx, [eax]
+			mov 	ecx, [eax]
 
 			; now calculate A[p+i]
 			mov 	eax, I
@@ -626,7 +626,7 @@ sortList proc
 			add 	eax, A
 			; now [eax] is A
 
-			mov 	[eax], edx
+			mov 	[eax], ecx
 
 			; i += 1
 			; k += 1
@@ -690,18 +690,18 @@ main proc
 	call 	sortList
 	;;;;;;;;;;;;;;;;;;;;
 
-	;;;;;;;;;;;;;;;;;;;;
-	push 	OFFSET sorted
-	push 	arraySize
-	push 	OFFSET array
-	call 	displayList
-	;;;;;;;;;;;;;;;;;;;;
-
 	;; CALL THIS AFTER SORTING THE ARRAY
 	;;;;;;;;;;;;;;;;;;;;
 	push 	arraySize
 	push 	OFFSET array
 	call 	displayMedian
+	;;;;;;;;;;;;;;;;;;;;
+
+	;;;;;;;;;;;;;;;;;;;;
+	push 	OFFSET sorted
+	push 	arraySize
+	push 	OFFSET array
+	call 	displayList
 	;;;;;;;;;;;;;;;;;;;;
 
 	invoke 	exitprocess,0
