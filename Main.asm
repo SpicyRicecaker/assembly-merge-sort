@@ -400,11 +400,11 @@ sortList proc
 	push 	ARRAY_SIZE
 	push 	A
 	call 	sortList
-	; call sort (r+1, p)
+	; call sort (r+1, q)
+	push 	Q
 	mov 	eax, R
 	add 	eax, 1
 	push 	eax
-	push 	P
 	push 	BUFFER
 	push 	ARRAY_SIZE
 	push 	A
@@ -437,8 +437,8 @@ sortList proc
 	mov 	esi, BUFFER
 	mov 	edx, A
 	copyStart:
-		mov 	edi, [edx]
-		mov 	[esi], edi
+		mov 	ebx, [edx]
+		mov 	[esi], ebx
 		add 	esi, 4
 		add 	edx, 4
 		loop 	copyStart
@@ -448,14 +448,14 @@ sortList proc
 	mov 	eax, P
 	mov 	ebx, 4
 	mul 	ebx
-	add 	eax, BUF
+	add 	eax, BUFFER
 	mov 	LEFT, eax
 	; right = A [r+1, q]
 	mov 	eax, R
 	add 	eax, 1
 	mov 	ebx, 4
 	mul 	ebx
-	add 	eax, BUF
+	add 	eax, BUFFER
 	mov 	RIGHT, eax
 
 	; while i < size && j < left_size and k < left_size
@@ -654,8 +654,15 @@ main proc
 	push 	eax ; p
 	push 	OFFSET buf
 	push 	arraySize
-	push 	array
+	push 	OFFSEt array
 	call 	sortList
+	;;;;;;;;;;;;;;;;;;;;
+
+	;;;;;;;;;;;;;;;;;;;;
+	push 	OFFSET sorted
+	push 	arraySize
+	push 	OFFSET array
+	call 	displayList
 	;;;;;;;;;;;;;;;;;;;;
 
 	;; CALL THIS AFTER SORTING THE ARRAY
