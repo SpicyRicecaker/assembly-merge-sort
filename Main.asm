@@ -176,12 +176,12 @@ generate endp
 
 ; This function fills an array with random floats of a certain range
 ; Receives: array (ref), array_size (val); push in reverse order
-A			EQU [EBP + 12]
-ARRAY_SIZE	EQU [EBP + 8]
+A			EQU [EBP + 8]
+ARRAY_SIZE	EQU [EBP + 12]
 fillArray proc
 	;; begin prologue ;;
-	push	ebp
-	mov		ebp, esp
+	push ebp
+	mov ebp, esp
 	pushad
 	;; end prologue   ;;
 
@@ -202,13 +202,10 @@ fillArray proc
 
 	;; begin epilogue ;;
 	popad
-	mov esp, ebp
 	pop ebp
 	;; end epilogue   ;;
 	ret
 fillArray endp
-
-; 1703788
 
 main proc
 	; Sets the seed according to system clock
@@ -230,7 +227,7 @@ main proc
 
 	;;;;;;;;;;;;;;;;;;;;
 	push arraySize
-	push array
+	push OFFSET array
 	call fillArray
 	;;;;;;;;;;;;;;;;;;;;
 
