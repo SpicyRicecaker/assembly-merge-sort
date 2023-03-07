@@ -27,15 +27,18 @@ endm
 
 
 .data
-	MIN EQU 10
-	MAX EQU 200
-	LO 	EQU 100
-	HI 	EQU 999
+	MIN 		EQU 10
+	MAX 		EQU 200
+	LO 			EQU 100
+	HI 			EQU 999
 
-	userIn DWORD ?
-	arraySize DWORD ? 
-	; since we know that hte maximum user input is 200, we preset the array size to 200
-	array DWORD MAX DUP(?)
+	userIn 		DWORD ?
+	arraySize 	DWORD ? 
+	; since we know that the maximum user input is 200, we preset the array size to 200
+	array 		DWORD MAX DUP(?)
+
+	unsorted 	BYTE "unsorted:",0
+	sorted 		BYTE "sorted:",0
 .code
 
 ; greets the user with program title and author
@@ -151,10 +154,9 @@ generate proc
 	mov 	eax, HI
 	sub 	eax, LO
 	add 	eax, 1
-	mov		ecx, eax
-	push	ecx
+	push	eax
 	fild 	DWORD PTR [esp]
-	pop		ecx
+	pop		eax
 
 	fmul
 
@@ -164,10 +166,10 @@ generate proc
 
 	fadd 	
 	
-	fistp 	DWORD PTR N
+	fstp 	DWORD PTR N
 
-	add		esp, 4
 	;; begin epilogue ;;
+	add		esp, 4
 	popad
 	pop		ebp
 	;; end epilogue   ;;
@@ -194,6 +196,7 @@ fillArray proc
 		call generate
 		pop edx
 		;;;;;;;;;;
+		
 
 		mov [esi], edx
 		
@@ -207,30 +210,148 @@ fillArray proc
 	ret
 fillArray endp
 
+; This function prints out all the floating point numbers in an array
+; Receives: array (ref), arraySize (val), labelArr (ref); push in reverse order
+A			EQU [EBP+8]
+ARRAY_SIZE 	EQU [EBP+12]
+LABEL_ARR	EQU [EBP+16]
+NUM_ROWS	EQU [EBP-4]
+Y			EQU [EBP-8]
+Y_OFFSET	EQU [EBP-12]
+X			EQU [EBP-16]
+X_OFFSET	EQU [EBP-20]
+displayList proc
+	;; begin prologue ;;
+	push 	ebp
+	mov 	ebp, esp
+	pushad
+	sub 	esp, 20
+	;; end prologue   ;;
+	mov 	edx, LABEL_ARR
+	call 	WriteString
+	call 	crlf
+
+	; { calculate number of rows we will have
+	mov 	eax, ARRAY_SIZE
+	mov 	ebx, 10
+	cdq
+	div 	ebx
+	mov 	NUM_ROWS, eax
+	; }
+
+	; reset & prime our variables
+	mov		eax, 0
+	mov 	X, eax ; set x to 0
+	mov 	esi, A ; set esi to A
+
+	mov 	ecx, NUM_ROWS ; iterate by the number of rows we have to print
+	nextInColumn:
+		mov 	edx, 0
+
+		; { reset y
+		mov 	eax, 0
+		mov 	Y, eax
+		; } 
+
+		; { calculate the X_OFFSET, which is simple cause it's just x * 4
+		mov		eax, X
+		mov		ebx, 4
+		mul		ebx
+		mov		X_OFFSET, eax
+		; }
+
+		; create a loop over elements in the row
+		push 	ecx
+		mov 	ecx, 10
+		nextInRow: 
+			; { Check if we have any more numbers
+			mov		eax, Y
+			mov		ebx, NUM_ROWS
+			mul		ebx
+			add		eax, X
+			cmp 	eax, ARRAY_SIZE
+			jge		nextInColumnPrelude
+			; } 
+
+			; { calculate the Y_OFFSET
+			mov		eax, Y
+			mov		ebx, NUM_ROWS
+			mul		ebx
+			mov 	ebx, 4
+			mul 	ebx
+			mov		Y_OFFSET, eax
+			; }
+
+			; { Add the Y_OFFSET to the X_OFFSET
+			mov		eax, X_OFFSET
+			add		eax, Y_OFFSET
+			; } 
+
+			; { now esi + eax will give the array element.
+			fld 	DWORD PTR [esi+eax]
+			call 	WriteFloat
+			print 	9
+			; } 
+
+			; { Increment y 
+			mov 	eax, Y
+			add 	eax, 1
+			mov 	Y, eax
+			; } 
+			loop 	nextInRow
+
+		nextInColumnPrelude:
+			pop 	ecx
+
+			call	crlf
+		
+			mov 	eax, X
+			add 	eax, 1
+			mov 	X, eax
+			;;;
+			loop nextInColumn
+
+	;; begin epilogue ;;
+	add 	esp, 20
+	popad
+	pop		ebp
+	;; end epilogue   ;;
+	ret
+displayList endp
+
+
 main proc
 	; Sets the seed according to system clock
 	; Setting to 0 for debug purposes
-	call Randomize
+	; call 	Randomize
 	finit
 
 	;;;;;;;;;;;;;;;;;;;;
-	call introduction
+	call 	introduction
 	;;;;;;;;;;;;;;;;;;;;
 
 	;;;;;;;;;;;;;;;;;;;;
-	push OFFSET userIn
-	call getData
+	push 	OFFSET userIn
+	call 	getData
 	;;;;;;;;;;;;;;;;;;;;
 
-	mov eax, userIn
-	mov arraySize, eax
+	mov 	eax, userIn
+	mov 	arraySize, eax
 
 	;;;;;;;;;;;;;;;;;;;;
-	push arraySize
-	push OFFSET array
-	call fillArray
+	push 	arraySize
+	push 	OFFSET array
+	call 	fillArray
 	;;;;;;;;;;;;;;;;;;;;
 
-	invoke exitprocess,0
+	;;;;;;;;;;;;;;;;;;;;
+	push 	OFFSET unsorted
+	push 	arraySize
+	push 	OFFSET array
+	call 	displayList
+	;;;;;;;;;;;;;;;;;;;;
+
+
+	invoke 	exitprocess,0
 main endp
 end main
