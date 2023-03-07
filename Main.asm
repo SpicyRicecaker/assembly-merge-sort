@@ -36,6 +36,8 @@ endm
 	arraySize 	DWORD ? 
 	; since we know that the maximum user input is 200, we preset the array size to 200
 	array 		DWORD MAX DUP(?)
+	; this is a buffer array that we need for merge sort
+	buf 		DWORD MAX DUP(?)
 
 	unsorted 	BYTE "unsorted:",0
 	sorted 		BYTE "sorted:",0
@@ -358,7 +360,7 @@ displayMedian endp
 ; Returns: VOID!!
 A 			EQU [EBP+8]
 ARRAY_SiZE 	EQU [EBP+12]
-BUF 		EQU [EBP+16]
+BUFFER 		EQU [EBP+16]
 P 			EQU [EBP+20]
 Q 			EQU [EBP+24]
 R 			EQU [EBP-4]
@@ -381,19 +383,20 @@ sortList proc
 	; { if p == q return 
 	mov 	eax, P
 	cmp 	eax, Q
-	je		cleanup
+	jge		cleanup
 	; }
 
-	; { declare r = (p+q.2)
-	add 	eax, q
+	; { declare r = ((p+q)/2)
+	add 	eax, Q
 	mov 	ebx, 2
+	cdq
 	div 	ebx
 	mov 	R, eax
 
 	; call sort (p, r)
 	push 	R
 	push 	P
-	push 	BUF
+	push 	BUFFER
 	push 	ARRAY_SIZE
 	push 	A
 	call 	sortList
@@ -402,7 +405,7 @@ sortList proc
 	add 	eax, 1
 	push 	eax
 	push 	P
-	push 	BUF
+	push 	BUFFER
 	push 	ARRAY_SIZE
 	push 	A
 	call 	sortList
@@ -429,18 +432,30 @@ sortList proc
 	sub 	eax, R
 	mov 	RIGHT_SIZE, eax
 
+	; { copy into B, A [p, q]
+	mov 	ecx, FINAL_SIZE
+	mov 	esi, BUFFER
+	mov 	edx, A
+	copyStart:
+		mov 	edi, [edx]
+		mov 	[esi], edi
+		add 	esi, 4
+		add 	edx, 4
+		loop 	copyStart
+	; }
+
 	; left = A [p, r]
 	mov 	eax, P
 	mov 	ebx, 4
 	mul 	ebx
-	add 	eax, A
+	add 	eax, BUF
 	mov 	LEFT, eax
 	; right = A [r+1, q]
 	mov 	eax, R
 	add 	eax, 1
 	mov 	ebx, 4
 	mul 	ebx
-	add 	eax, A
+	add 	eax, BUF
 	mov 	RIGHT, eax
 
 	; while i < size && j < left_size and k < left_size
@@ -592,7 +607,7 @@ sortList proc
 
 	;; begin epilogue ;;
 	cleanup: 
-	sub 	esp, 4
+	add 	esp, 4
 	popad
 	pop 	ebp
 	;; end epilogue   ;;
@@ -629,6 +644,18 @@ main proc
 	push 	arraySize
 	push 	OFFSET array
 	call 	displayList
+	;;;;;;;;;;;;;;;;;;;;
+
+	;;;;;;;;;;;;;;;;;;;;
+	mov 	eax, arraySize
+	dec 	eax
+	push 	eax ; q
+	mov 	eax, 0
+	push 	eax ; p
+	push 	OFFSET buf
+	push 	arraySize
+	push 	array
+	call 	sortList
 	;;;;;;;;;;;;;;;;;;;;
 
 	;; CALL THIS AFTER SORTING THE ARRAY
