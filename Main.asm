@@ -27,7 +27,7 @@ endm
 
 
 .data
-	MIN 		EQU 10
+	MIN 		EQU 1
 	MAX 		EQU 200
 	LO 			EQU 100
 	HI 			EQU 999
@@ -191,7 +191,6 @@ fillArray proc
 	mov esi, A
 
 	start:
-		print "HI"
 		;;;;;;;;;;
 		push 0
 		call generate
@@ -228,102 +227,46 @@ displayList proc
 	pushad
 	sub 	esp, 20
 	;; end prologue   ;;
+
+	print "--begin list--"
+	call crlf
+
 	mov 	edx, LABEL_ARR
 	call 	WriteString
-	call 	crlf
 
-	; { calculate number of rows we will have
-	mov 	eax, ARRAY_SIZE
-	mov 	ebx, 10
-	cdq
-	div 	ebx
-	mov 	NUM_ROWS, eax
-	; }
+	mov		ecx, ARRAY_SIZE
+	mov 	eax, 0
+	mov 	esi, A
 
-	; reset & prime our variables
-	mov		eax, 0
-	mov 	X, eax ; set x to 0
-	mov 	esi, A ; set esi to A
+	next:
+		push 	eax
+		mov 	ebx, 10
+		cdq
+		div 	ebx
+		pop 	eax
 
-	mov ecx, ARRAY_SIZE
+		cmp 	edx, 0
+		jne		noNewLine
 
-	start:
+		call 	crlf
+
+		noNewLine: 
+
+		; { now esi + eax will give the array element.
 		fld 	DWORD PTR [esi]
 		call 	WriteFloat
+		; MAKE SURE THIS IS HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		fstp	st(0)
+		; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		print 	9
-		; literally just here to make sure the floating stack doesn't overflow
-		fstp 	st(0)
+		; } 
+		inc 	eax
+		add 	esi, 4
+	loop	next
 
-		add esi, 4
-		loop start
-
-
-	; mov 	ecx, NUM_ROWS ; iterate by the number of rows we have to print
-	; nextInColumn:
-	; 	mov 	edx, 0
-
-	; 	; { reset y
-	; 	mov 	eax, 0
-	; 	mov 	Y, eax
-	; 	; } 
-
-	; 	; { calculate the X_OFFSET, which is simple cause it's just x * 4
-	; 	mov		eax, X
-	; 	mov		ebx, 4
-	; 	mul		ebx
-	; 	mov		X_OFFSET, eax
-	; 	; }
-
-	; 	; create a loop over elements in the row
-	; 	push 	ecx
-	; 	mov 	ecx, 10
-	; 	nextInRow: 
-	; 		; { Check if we have any more numbers
-	; 		mov		eax, Y
-	; 		mov		ebx, NUM_ROWS
-	; 		mul		ebx
-	; 		add		eax, X
-	; 		cmp 	eax, ARRAY_SIZE
-	; 		jge		nextInColumnPrelude
-	; 		; } 
-
-	; 		; { calculate the Y_OFFSET
-	; 		mov		eax, Y
-	; 		mov		ebx, NUM_ROWS
-	; 		mul		ebx
-	; 		mov 	ebx, 4
-	; 		mul 	ebx
-	; 		mov		Y_OFFSET, eax
-	; 		; }
-
-	; 		; { Add the Y_OFFSET to the X_OFFSET
-	; 		mov		eax, X_OFFSET
-	; 		add		eax, Y_OFFSET
-	; 		; } 
-
-	; 		; { now esi + eax will give the array element.
-	; 		fld 	DWORD PTR [esi+eax]
-	; 		call 	WriteFloat
-	; 		print 	9
-	; 		; } 
-
-	; 		; { Increment y 
-	; 		mov 	eax, Y
-	; 		add 	eax, 1
-	; 		mov 	Y, eax
-	; 		; } 
-	; 		loop 	nextInRow
-
-	; 	nextInColumnPrelude:
-	; 		pop 	ecx
-
-	; 		call	crlf
-	; 	
-	; 		mov 	eax, X
-	; 		add 	eax, 1
-	; 		mov 	X, eax
-	; 		;;;
-	; 		loop nextInColumn
+	call crlf
+	print "--end list--"
+	call crlf
 
 	;; begin epilogue ;;
 	add 	esp, 20
@@ -332,6 +275,74 @@ displayList proc
 	;; end epilogue   ;;
 	ret
 displayList endp
+
+; Prints out the median of a list of SORTED floats.
+; Receives: array (ref), array_size (val); push these in reverse order
+A 			EQU	[EBP+8]
+ARRAY_SIZE 	EQU	[EBP+12]
+LEFT		EQU [EBP-4]
+RIGHT		EQU [EBP-8]
+displayMedian proc
+	;; begin prologue ;;
+	push 	ebp
+	mov 	ebp, esp
+	pushad
+	sub	 	esp, 8
+	;; end prologue   ;;
+
+	mov 	esi, A
+
+	mov 	eax, ARRAY_SIZE
+	mov 	ebx, 2
+	cdq
+	div 	ebx
+	cmp 	edx, 0
+	je 		case0
+
+	jmp 	case1
+
+	case0:
+		mov 	LEFT, eax
+		inc 	eax
+		mov 	RIGHT, eax
+
+		mov 	eax, 0
+
+		fld 	DWORD PTR [esi+LEFT]
+		fld 	DWORD PTR [esi+RIGHT]
+		fadd
+
+		mov 	eax, 2
+		fild 	DWORD PTR [esp]
+		pop 	eax
+
+		fdiv
+
+		print  	"median: "
+		call 	WriteFloat
+		call 	crlf
+
+		fstp 	st(0)
+		jmp 	endcase
+
+	case1:
+		fld 	DWORD PTR [esi+eax]
+
+		print  	"median: "
+		call 	WriteFloat
+		call 	crlf
+
+		fstp 	st(0)
+
+	endcase: 
+
+	;; begin prologue ;;
+	add 	esp, 8
+	popad
+	pop 	ebp
+	;; end prologue   ;;
+	ret
+displayMedian endp
 
 
 main proc
@@ -365,6 +376,11 @@ main proc
 	call 	displayList
 	;;;;;;;;;;;;;;;;;;;;
 
+	;;;;;;;;;;;;;;;;;;;;
+	push 	arraySize
+	push 	OFFSET array
+	call 	displayMedian
+	;;;;;;;;;;;;;;;;;;;;
 
 	invoke 	exitprocess,0
 main endp
