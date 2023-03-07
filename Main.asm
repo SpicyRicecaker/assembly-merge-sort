@@ -173,7 +173,7 @@ generate proc
 	popad
 	pop		ebp
 	;; end epilogue   ;;
-	ret 	4
+	ret 	0
 generate endp 
 
 ; This function fills an array with random floats of a certain range
@@ -285,27 +285,39 @@ displayMedian proc
 
 	mov 	esi, A
 
+	; { setting eax to array_size/2
 	mov 	eax, ARRAY_SIZE
 	mov 	ebx, 2
 	cdq
 	div 	ebx
 	cmp 	edx, 0
+	; } 
 	je 		case0
 
 	jmp 	case1
 
 	case0:
+		dec		eax
 		mov 	LEFT, eax
 		inc 	eax
 		mov 	RIGHT, eax
 
-		mov 	eax, 0
+		mov 	eax, LEFT
+		mov		ebx, 4
+		mul		ebx
 
-		fld 	DWORD PTR [esi+LEFT]
-		fld 	DWORD PTR [esi+RIGHT]
+		fld 	DWORD PTR [esi+eax]
+
+		mov 	eax, RIGHT
+		mov		ebx, 4
+		mul		ebx
+
+		fld 	DWORD PTR [esi+eax]
+
 		fadd
 
 		mov 	eax, 2
+		push	eax
 		fild 	DWORD PTR [esp]
 		pop 	eax
 
@@ -319,6 +331,9 @@ displayMedian proc
 		jmp 	endcase
 
 	case1:
+		mov		ebx, 4
+		mul		ebx
+
 		fld 	DWORD PTR [esi+eax]
 
 		print  	"median: "
@@ -391,7 +406,6 @@ sortList proc
 	push 	ARRAY_SIZE
 	push 	A
 	call 	sortList
-	sortList
 
 	; size = q - r + 1
 	add 	eax, Q
@@ -432,15 +446,15 @@ sortList proc
 	; while i < size && j < left_size and k < left_size
 	loopStart:
 		mov 	eax, I
-		cmp 	I, FINAL_SIZE
+		cmp 	eax, FINAL_SIZE
 		je 		emptyArrays
 
 		mov 	eax, J
-		cmp 	J, LEFT_SIZE
+		cmp 	eax, LEFT_SIZE
 		je 		emptyArrays
 
 		mov 	eax, K
-		cmp 	K, RIGHT_SIZE
+		cmp 	eax, RIGHT_SIZE
 		je 		emptyArrays
 		; if right[j] < left[k]
 		
@@ -458,7 +472,7 @@ sortList proc
 
 		cmp 	[eax], ecx
 		jl 		rightLessThanLeft
-			leftLessThanRight
+			leftLessThanRight:
 				; A [p+i] = left[j]
 				; recall that left[j] is currently ecx, so we're free to use eax!
 				mov 	edx, [eax]
