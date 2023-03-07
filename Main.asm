@@ -450,6 +450,7 @@ sortList proc
 	mul 	ebx
 	add 	eax, BUFFER
 	mov 	LEFT, eax
+
 	; right = A [r+1, q]
 	mov 	eax, R
 	add 	eax, 1
@@ -478,19 +479,48 @@ sortList proc
 		mul 	ebx
 		add 	eax, LEFT
 
-		mov 	ecx, [eax] ; temporarily store left[j] as ecx
+		; ;;;;;;;;;;;;;;;;;;;;
+		; push 	OFFSET sorted
+		; push 	LEFT_SIZE
+		; push 	eax
+		; call 	displayList
+		; ;;;;;;;;;;;;;;;;;;;;
+
+		push	[eax]
+		fld 	DWORD PTR [esp]  ; temporarily store left[j] as st(0)
+		pop		eax
+
+		; print "THIS IS LEFT"
+		; call	WriteFloat
 
 		mov 	eax, K
 		mov 	ebx, 4
 		mul 	ebx
 		add 	eax, RIGHT ; right[k] is eax
 
-		cmp 	[eax], ecx
-		jl 		rightLessThanLeft
+		; ;;;;;;;;;;;;;;;;;;;;
+		; push 	OFFSET sorted
+		; push 	RIGHT_SIZE
+		; push 	eax
+		; call 	displayList
+		; ;;;;;;;;;;;;;;;;;;;;
+		
+		push	[eax]
+		fld 	DWORD PTR [esp]  ; now right is st(0)
+		pop		eax
+
+		; print "THIS IS RIGHT"
+		; call	WriteFloat
+
+		fcom 	; compares st(0) (right) with st(1) (left)
+		; this section is copied straight from the irvine textbook, illegally difficult ec for what? 
+		fnstsw	ax ; ; move status word into AX
+		sahf ; copy AH into EFLAGS
+		jnb     leftLessThanRight
+		jmp		rightLessThanLeft
 			leftLessThanRight:
 				; A [p+i] = left[j]
-				; recall that left[j] is currently ecx, so we're free to use eax!
-				mov 	edx, [eax]
+				; recall that left[j] is currently st(0)
 
 				; Calculate OFFSET A[p+i]
 				mov 	eax, I
@@ -500,7 +530,10 @@ sortList proc
 				add 	eax, A
 
 				; A[p+i] = left[j]
-				mov 	[eax], ecx
+				; remove right
+				fstp	st(0)
+				; put left
+				fstp	DWORD PTR [eax]
 
 				; i += 1
 				; j += 1
@@ -513,8 +546,6 @@ sortList proc
 			; else
 			rightLessThanLeft:
 				; A[p+i] = right[k]
-				; recall that right[k] is currently [eax], so let's move it into edx
-				mov 	edx, [eax]
 
 				; calcualte A[p+i]
 				mov 	eax, I
@@ -524,7 +555,8 @@ sortList proc
 				add 	eax, A
 
 				; set A[p+i] = right[k]
-				mov 	[eax], edx
+				fstp	DWORD PTR [eax]
+				fstp	st(0)
 
 				; i += 1
 				; k += 1
@@ -539,7 +571,7 @@ sortList proc
 		emptyLeftStart:
 			mov 	eax, J
 			cmp 	eax, LEFT_SIZE
-			je  	emptyLeftEnd
+			jge  	emptyLeftEnd
 
 			; A[p+i] = left[j]
 
@@ -574,7 +606,7 @@ sortList proc
 		emptyRightStart:
 			mov 	eax, K
 			cmp 	eax, RIGHT_SIZE
-			je  	emptyRightEnd
+			jge  	emptyRightEnd
 
 			; A[p+i] = right[k]
 
