@@ -48,6 +48,7 @@ introduction proc
 	print 	"Sorting Random Floats by Shengdong Li."
 	call 	crlf
 	print 	"This program randomly generates some amount of numbers specified by the user, within a certain range. It then sorts this array of numbers and prints it out."
+	call	crlf
 	ret
 introduction endp
 
@@ -653,6 +654,11 @@ main proc
 	; call 	Randomize
 	finit
 
+	print "**EC: Use a recursive sorting algorithm: Merge Sort."
+	call crlf
+	print "**EC: Implement the program using floating-point numbers and the floating-point processor."
+	call crlf
+
 	;;;;;;;;;;;;;;;;;;;;
 	call 	introduction
 	;;;;;;;;;;;;;;;;;;;;
@@ -703,6 +709,8 @@ main proc
 	push 	OFFSET array
 	call 	displayList
 	;;;;;;;;;;;;;;;;;;;;
+
+	print "Thank you for using my program. Made with <3 by Shengdong Li."
 
 	invoke 	exitprocess,0
 main endp
