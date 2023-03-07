@@ -33,6 +33,9 @@ endm
 	HI 	EQU 999
 
 	userIn DWORD ?
+	arraySize DWORD ? 
+	; since we know that hte maximum user input is 200, we preset the array size to 200
+	array DWORD MAX DUP(?)
 .code
 
 ; greets the user with program title and author
@@ -91,6 +94,7 @@ getData proc
 
 	invalid: 
 		print "Invalid Input."
+		call crlf
 
 	body: 
 		print "How many numbers should be generated? [10 .. 200]: "
@@ -115,7 +119,57 @@ getData proc
 	ret 4
 getData endp
 
+; This function generates a float between a certain range of integers defined as a constant
+; Receives: n (val) ; a dummy value.
+; Returns: n (val) ; a 32-bit float
+generate proc 
+	; generate a number between 0 and 1
+	mov eax, 1000000
+	inc eax
+	call RandomRange
+
+generate endp 
+
+; This function fills an array with random floats of a certain range
+; Receives: array (ref), array_size (val); push in reverse order
+ARRAY		EQU [EBP + 12]
+ARRAY_SIZE	EQU [EBP + 8]
+fillArray proc
+	;; begin prologue ;;
+	push	ebp
+	mov		ebp, esp
+	pushad
+	;; end prologue   ;;
+
+	mov ecx, ARRAY_SIZE
+	mov esi, ARRAY
+
+	start:
+		;;;;;;;;;;
+		push 0
+		call generate
+		pop edx
+		;;;;;;;;;;
+
+		mov [esi], edx
+		
+		add esi, 4
+		loop start
+
+	;; begin epilogue ;;
+	popad
+	mov esp, ebp
+	pop ebp
+	;; end epilogue   ;;
+	ret
+fillArray endp
+
 main proc
+	; Sets the seed according to system clock
+	; Setting to 0 for debug purposes
+	; call Randomize
+	finit
+
 	;;;;;;;;;;;;;;;;;;;;
 	call introduction
 	;;;;;;;;;;;;;;;;;;;;
@@ -123,9 +177,14 @@ main proc
 	;;;;;;;;;;;;;;;;;;;;
 	push OFFSET userIn
 	call getData
+	;;;;;;;;;;;;;;;;;;;;
 
-	mov eax, userIn
-	call WriteInt
+	mov arraySize, userIn
+
+	;;;;;;;;;;;;;;;;;;;;
+	push arraySize
+	push array
+	call fillArray
 	;;;;;;;;;;;;;;;;;;;;
 
 	invoke exitprocess,0
